@@ -7,4 +7,4 @@
 5. `docker-compose up`
 ## Тестирование и маршруты
 - Swagger - http://localhost:8000/swagger/docs/
-- Tests - `python manage.py test` (Во время работы веб приложения). Создаём небольшую базу.
+- Tests - `python manage.py test` (Запускаем во время работы веб приложения)
