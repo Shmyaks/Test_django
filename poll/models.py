@@ -17,7 +17,7 @@ class Question(models.Model):
 class Report(models.Model):
     owner = models.ForeignKey(User, related_name='reports', on_delete=models.CASCADE, default=None, null=True)
     poll_id = models.ForeignKey('Poll', on_delete=models.CASCADE, null=False)
-    completed = models.BooleanField(default=False, editable=False)
+    completed = models.BooleanField(default=False)
 
 
 class Answer(models.Model):

@@ -30,17 +30,10 @@ class ReportCreate(generics.CreateAPIView):
             for question in questions]
 
 
-class ReportStop(generics.UpdateAPIView):
-    queryset = Report.objects.all()
-    serializer_class = ReportStopSerializer
-
 
 class AnswerSend(generics.UpdateAPIView):
-    queryset = Report.objects.all()
+    queryset = Answer.objects.all()
     serializer_class = AnswersSendSerializer
-
-    def perform_update(self, serializer):
-        print(serializer.data)
 
 
 class QuestionList(generics.ListCreateAPIView):
