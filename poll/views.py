@@ -11,16 +11,40 @@ from rest_framework.response import Response
 
 
 class PollList(generics.ListCreateAPIView):
+    """
+    - 'GET' Получение списка опросов
+    - 'POST' Создание опроса
+
+    - Для создание опроса требуется:
+    -- {
+        "title": "string",
+        "description": "string"
+        }
+    """
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
 
 
 class PollDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    - 'GET' Получение опроса (детально)
+    - 'PUT' Изменение опроса
+    - 'PATCH' Изменение опроса
+    - 'DELETE' Удаление опроса
+
+    - id - (poll.id)
+    """
     queryset = Poll.objects.all()
     serializer_class = PollSerializer
 
 
 class ReportCreate(generics.CreateAPIView):
+    """
+    - 'POST' Начало выполнение опроса.
+    Опрос можно проходить анонимно. Для этого уберите - [owner]
+
+    Для создание начала опроса требуется обязатально - {"poll_id":"int"}
+    """
     serializer_class = ReportStartSerializer
 
     def perform_create(self, serializer):
@@ -31,11 +55,29 @@ class ReportCreate(generics.CreateAPIView):
 
 
 class AnswerSend(generics.UpdateAPIView):
+    """
+    - 'PUT' Отправка ответа
+    - 'PATCH' Отправка ответа
+    - id - (answer.id)
+    """
     queryset = Answer.objects.all()
     serializer_class = AnswersSendSerializer
 
 
 class QuestionList(generics.ListCreateAPIView):
+    """
+    - 'GET' Получение списка вопросов. (Для понимания, что он создан)
+    - 'POST' Создание вопроса.
+
+    - ['type'] - 1 (Вопрос с одним вариантом ответа)
+    - ['type'] - 2 (Вопрос с двумя и более вариантом ответа)
+    - ['type'] - 3 (Вопрос с текстом)
+
+    Создание текста вопроса. Пример с (type = 1). "text":["Яблоко"], (type = 2) "text":["Первый выбор", "Второй выбор"], (type = 3) "text": ["Длинный длинный текст и ещё больше"]
+
+    - Для создание вопроса требуется обязательно - {'type': int, 'poll_id':''int, 'text': [String]}
+    """
+
     queryset = Question.objects.all()
     serializer_class = QuestionlSerializer
 
@@ -63,6 +105,14 @@ class QuestionList(generics.ListCreateAPIView):
 
 
 class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    - 'GET' Получение вопроса (детально)
+    - 'PUT' Изменение вопроса
+    - 'PATCH' Изменение вопроса
+    - 'DELETE' Удаление вопроса
+
+    - id - (question.id)
+     """
     queryset = Question.objects.all()
     serializer_class = QuestionlSerializer
 
@@ -89,16 +139,33 @@ class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class ReportDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    - 'GET' Получение отчёта (детально)
+    - 'PUT' Изменение отчёта
+    - 'PATCH' Изменение отчёта
+    - 'DELETE' Удаление отчёта
+
+    - id - (report.id)
+     """
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
 
 
 class UserReportsDetail(generics.ListAPIView):
+    """
+    - 'GET' Получение отчёта по id юзеру (детально)
+    """
+
     queryset = User.objects.all()
     serializer_class = UserReportSerializer
 
 
 class PollClose(generics.UpdateAPIView):
+    """
+    - 'PUT' Завершение опроса
+    - 'PATCH' Завершение опроса
+    id -  (poll.id)
+    """
     queryset = Poll.objects.all()
     serializer_class = PolCloseSerializer
 
