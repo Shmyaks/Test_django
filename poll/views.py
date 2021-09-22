@@ -46,8 +46,7 @@ class QuestionList(generics.ListCreateAPIView):
             return Response({"detail": "None of poll"}, status=status.HTTP_404_NOT_FOUND)
         question = Question.objects.create(
             type=request.data['type'], poll_id=poll)
-        if (request.data['type'] == 1 and len(re.findall(r'\w+', request.data['text'][0])) == 1 and len(request.data['text']) == 1):
-            print(re.findall(r'\w+', request.data['text'][0]))
+        if (request.data['type'] == 1 and len(request.data['text']) == 1):
             Question_choice(
                 words=request.data['text'][0], question_id=question).save()
         elif (request.data['type'] == 2) and len(request.data['text']) > 1:
@@ -66,6 +65,27 @@ class QuestionList(generics.ListCreateAPIView):
 class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionlSerializer
+
+    def update(self, request, *args, **kwargs):
+        question = Question.objects.filter(id=kwargs['pk']).first()
+        if question is None:
+            return Response({"detail": "question is None"}, status=status.HTTP_404_NOT_FOUND)
+        if (request.data['type'] == 1 and len(request.data['text']) == 1):
+            question.text.all().delete()
+            Question_choice(
+                words=request.data['text'][0], question_id=question).save()
+        elif (request.data['type'] == 2) and len(request.data['text']) > 1:
+            question.text.all().delete()
+            [Question_choice(words=word, question_id=question).save()
+             for word in request.data['text']]
+        elif (request.data['type'] == 3) and len(request.data['text']) == 1:
+            question.text.all().delete()
+            Question_choice(
+                words=request.data['text'][0], question_id=question).save()
+        else:
+            return Response({"error": "Error with type of question"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+        return Response(QuestionlSerializer(question).data, status=status.HTTP_201_CREATED)
 
 
 class ReportDetail(generics.RetrieveUpdateDestroyAPIView):

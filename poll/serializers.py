@@ -1,16 +1,19 @@
 from django.contrib.auth.models import User
+from django.db.models import fields
 from .models import Poll, Question, Answer, Report, Question_choice
 from rest_framework import serializers
 
 
 class QuestionTypeslSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=False, write_only=True)
+
     class Meta:
         model = Question_choice
         fields = ('id', 'words')
 
 
 class QuestionlSerializer(serializers.ModelSerializer):
-    text = serializers.ListSerializer(child=serializers.CharField())
+    text = QuestionTypeslSerializer(many=True)
 
     class Meta:
         model = Question
