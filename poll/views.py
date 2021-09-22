@@ -4,8 +4,7 @@ from rest_framework import generics
 from django.contrib.auth.models import User
 from .serializers import *
 from rest_framework.generics import get_object_or_404
-from rest_framework import status
-from rest_framework.response import Response
+from datetime import datetime
 # Create your views here.
 
 
@@ -53,4 +52,14 @@ class ReportDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class UserReportsDetail(generics.ListAPIView):
     queryset = User.objects.all()
-    serializer_class = ReportSerializer 
+    serializer_class = UserReportSerializer
+
+
+class PollClose(generics.UpdateAPIView):
+    queryset = Poll.objects.all()
+    serializer_class = PolCloseSerializer
+
+    def perform_update(self, serializer):
+        poll = Poll.objects.filter(id=serializer.data['id']).first()
+        poll.date_end = datetime.utcnow()
+        poll.save()
