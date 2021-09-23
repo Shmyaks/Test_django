@@ -1,71 +1,118 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory
-from .models import Poll
 import requests
+import random
 # Create your tests here.
 
 User = get_user_model()
 
 
 class TestsDjango(TestCase):
+    """После тестирования у нас будет:
+        3 опроса (2 закрытых)
+        5 юзеров
+        15 вопросов (3 вопроса будут удалены)
+        7 отчётов (5 от юзеров) (2 анонимных) (1 анонимный выполнен)
+        20 ответов на опросы
+    """
+
     def setUp(self):
         # Every test needs access to the request factory.
         self.factory = requests
 
-    def test_start(self) -> None:
-        c = self.factory
-        c.post('http://localhost:8000/api/poll',
-               data={'title': 'Первый опрос', 'description': 'Хороший опрос'})
-        c.post('http://localhost:8000/api/poll',
-               data={'title': 'Второй опрос', 'description': 'Хороший-средний опрос'})
-        c.post('http://localhost:8000/api/poll',
-               data={'title': 'Третий опрос', 'description': 'Хороший-отличный опрос'})
+    def test_a_create_user(self) -> None:
+        """Создание 5 юзеров"""
 
-        c.put('http://localhost:8000/api/poll/3',
-              data={'title': 'Замена опрос', 'description': 'Замена опрос'})
+        self.factory.post('http://localhost:8000/api/user',
+                          json={'username': 'anton', 'password': '123456'})
+        self.factory.post('http://localhost:8000/api/user',
+                          json={'username': 'maxin', 'password': '123456'})
+        self.factory.post('http://localhost:8000/api/user',
+                          json={'username': 'dima', 'password': '123456'})
+        self.factory.post('http://localhost:8000/api/user',
+                          json={'username': 'egot', 'password': '123456'})
+        self.factory.post('http://localhost:8000/api/user',
+                          json={'username': 'leha', 'password': '123456'})
 
-        response = c.get('http://localhost:8000/api/poll')
+    def test_b_create_polls(self) -> None:
+        '''Создание 3 опросов и изменение последнего на tilte - Четвёртый опрос'''
+
+        self.factory.post('http://localhost:8000/api/poll',
+                          data={'title': 'Первый опрос', 'description': 'Хороший опрос'})
+        self.factory.post('http://localhost:8000/api/poll',
+                          data={'title': 'Второй опрос', 'description': 'Хороший-средний опрос'})
+        self.factory.post('http://localhost:8000/api/poll',
+                          data={'title': 'Третий опрос', 'description': 'Хороший-отличный опрос'})
+        self.factory.put('http://localhost:8000/api/poll/3',
+                         data={'title': 'Четвёртый опрос', 'description': 'отличный опрос'})
+
+    def test_c_create_questions(self) -> None:
+        """Создание 5  в каждом опросе
+           в первом один выбор.
+           второй с двумя выборами
+           3 рандомный текст
+        """
+        list_type = [1, 2, 3]
+
+        random_words = ['Хорошо', 'Классно', 'Олично',
+                        'Большие слова', 'Ещё один выбор', 'Второй выбор']
+        for i in range(5):
+            self.factory.post('http://localhost:8000/api/questions',
+                              json={"type": 1, "text": [random_words[random.randint(0, len(random_words)-1)]], "poll_id": 1})
 
         for i in range(5):
-            c.post('http://localhost:8000/api/questions',
-                   json={"type": 1, "text": ["а опрос"], "poll_id": 1})
+            self.factory.post('http://localhost:8000/api/questions',
+                              json={"type": 2, "text": [random_words[random.randint(0, len(random_words)-1)],
+                                                        random_words[random.randint(0, len(random_words)-1)]], "poll_id": 2})
 
         for i in range(5):
-            c.post('http://localhost:8000/api/questions',
-                   json={"type": 2, "text": ["б опрос", "i love", "dsadsa"], "poll_id": 2})
+            self.factory.post('http://localhost:8000/api/questions',
+                              json={"type": 3, 'text': [requests.get("https://fish-text.ru/get").json()['text']], "poll_id": 3})
 
-        for i in range(5):
-            c.post('http://localhost:8000/api/questions',
-                   json={"type": 3, 'text': [" опрос текст вф выф выф выф фы фыв"], "poll_id": 3})
+    def test_d_delete_questions(self) -> None:
+        """Удаление одного вопроса в каждом опроснике"""
+        for i in range(1, 4):
+            self.factory.delete(f'http://localhost:8000/api/questions/{i*5}')
 
-        response = c.get('http://localhost:8000/api/questions/3')
+    def test_e_start_report(self) -> None:
+        """Создание начало опроса
+           Каждый юзер начнёт по одному рандомному опросу.
+           Последние два будут анонимно
+           В сумме 7 отчётов
+        """
 
-        response = c.get('http://localhost:8000/api/questions/5')
+        random_polls = [1, 2, 3]
 
-        response = c.get('http://localhost:8000/api/questions/10')
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'owner': '1', 'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'owner': '2', 'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'owner': '3', 'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'owner': '4', 'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'owner': '5', 'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
+        self.factory.post('http://localhost:8000/api/report/start',
+                          json={'poll_id': random_polls[random.randint(0, len(random_polls)-1)]})
 
-        response = c.put('http://localhost:8000/api/questions/13',
-                         json={'type': 1, 'text': ['100 опрос'], 'poll_id': 1})
+    def test_f_close_report(self) -> None:
+        """Один анонимный пользователь закончит проходить опрос"""
+        self.factory.patch('http://localhost:8000/api/report/6',
+                           json={"completed": True})
 
-        response = c.delete('http://localhost:8000/api/questions/5')
+    def test_g_answer_to_report(self) -> None:
+        """Каждый юзер ответит на свои вопросы"""
+        for i in range(1, 21):
+            text = requests.get("https://fish-text.ru/get").json()
+            print(text['text'])
+            response = self.factory.patch(
+                f"http://localhost:8000/api/answer/{i}", json={'ans': text['text']})
+            print(response.json())
 
-        response = c.post('http://localhost:8000/api/report/start',  # Нужно начального юзера (Admin)
-                          data={'owner': '1', 'poll_id': '1'})
-
-        response = c.post('http://localhost:8000/api/report/start',
-                          data={'poll_id': '2'})
-
-        response = c.post(
-            'http://localhost:8000/api/report/start', data={'poll_id': '2'})
-
-        response = c.get('http://localhost:8000/api/report/2')
-
-        response = c.delete('http://localhost:8000/api/report/3')
-
-        response = c.get("http://localhost:8000/api/user/1/report")
-
-        response = c.patch(
-            "http://localhost:8000/api/answer/1", data={'ans': '12345'})
-
-        response = c.put('http://localhost:8000/api/poll/1/close')
+    def test_h_close_poll(self) -> None:
+        """Закроем 2 опроса из 3"""
+        self.factory.put('http://localhost:8000/api/poll/1/close')
+        self.factory.put('http://localhost:8000/api/poll/2/close')
