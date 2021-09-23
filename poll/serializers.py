@@ -13,11 +13,11 @@ class QuestionTypeslSerializer(serializers.ModelSerializer):
 
 
 class QuestionlSerializer(serializers.ModelSerializer):
-    text = QuestionTypeslSerializer(many=True)
+    chooses = QuestionTypeslSerializer(many=True)
 
     class Meta:
         model = Question
-        fields = ('id', 'type', 'poll_id', 'text')
+        fields = ('id', 'type', 'poll_id', 'question', 'chooses')
 
 
 class PollSerializer(serializers.ModelSerializer):

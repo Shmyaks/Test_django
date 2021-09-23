@@ -1,4 +1,6 @@
 import re
+
+from django.db.models.query_utils import Q
 from .models import Answer, Poll, Question, Report
 from rest_framework import generics
 from django.contrib.auth.models import User
@@ -72,6 +74,8 @@ class ReportCreate(generics.CreateAPIView):
         [(Answer(ans="", question=question, report_id=report).save())
             for question in questions]
 
+        return Response(ReportStartSerializer(report).data, status=status.HTTP_201_CREATED)
+
 
 class AnswerSend(generics.UpdateAPIView):
     """
@@ -81,6 +85,24 @@ class AnswerSend(generics.UpdateAPIView):
     """
     queryset = Answer.objects.all()
     serializer_class = AnswersSendSerializer
+
+    def update(self, request, **kwargs):
+        answer = get_object_or_404(Answer, pk=kwargs.get('pk'))
+        question = answer.question
+        type = question.type
+        chooses = [choose.words for choose in question.chooses.all()]
+        success = False
+        if type == 1 or type == 2:
+            if request.data['ans'] in chooses:
+                success = True
+        else:
+            success = True
+        if success == True:
+            answer.ans = request.data['ans']
+            answer.save()
+            return Response(AnswerSerializer(answer).data, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Error with answer type"}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class QuestionList(generics.ListCreateAPIView):
@@ -92,9 +114,11 @@ class QuestionList(generics.ListCreateAPIView):
     - ['type'] - 2 (Вопрос с двумя и более вариантом ответа)
     - ['type'] - 3 (Вопрос с текстом)
 
-    Создание текста вопроса. Пример с (type = 1). "text":["Яблоко"], (type = 2) "text":["Первый выбор", "Второй выбор"], (type = 3) "text": ["Длинный длинный текст и ещё больше"]
+    Создание текста вопроса. Пример с (type = 1). "chooses":["Яблоко"], (type = 2) "chooses":["Первый выбор", "Второй выбор"], (type = 3) "chooses": ["Длинный длинный текст и ещё больше"]
 
-    - Для создание вопроса требуется обязательно - {'type': int, 'poll_id':''int, 'text': [String]}
+    - Для создание вопроса требуется обязательно - {'type': int, 'poll_id':''int, 'chooses': [String], 'question':'Вопрос?'}
+    - text - выбор ответа 
+    - question - выбор вопроса
     """
 
     queryset = Question.objects.all()
@@ -106,16 +130,16 @@ class QuestionList(generics.ListCreateAPIView):
         if poll is None:
             return Response({"detail": "None of poll"}, status=status.HTTP_404_NOT_FOUND)
         question = Question.objects.create(
-            type=request.data['type'], poll_id=poll)
-        if (request.data['type'] == 1 and len(request.data['text']) == 1):
+            type=request.data['type'], poll_id=poll, question=request.data['question'])
+        if (request.data['type'] == 1 and len(request.data['chooses']) == 1):
             Question_choice(
-                words=request.data['text'][0], question_id=question).save()
-        elif (request.data['type'] == 2) and len(request.data['text']) > 1:
+                words=request.data['chooses'][0], question_id=question).save()
+        elif (request.data['type'] == 2) and len(request.data['chooses']) > 1:
             [Question_choice(words=word, question_id=question).save()
-             for word in request.data['text']]
-        elif (request.data['type'] == 3) and len(request.data['text']) == 1:
+             for word in request.data['chooses']]
+        elif (request.data['type'] == 3) and len(request.data['chooses']) == 1:
             Question_choice(
-                words=request.data['text'][0], question_id=question).save()
+                words=request.data['chooses'][0], question_id=question,).save()
         else:
             return Response({"error": "Error with type of question"}, status=status.HTTP_406_NOT_ACCEPTABLE)
         question.save()
@@ -131,6 +155,8 @@ class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):
     - 'DELETE' Удаление вопроса
 
     - id - (question.id)
+    - question - название вопроса   
+    - chooses - выбор ответа 
      """
     queryset = Question.objects.all()
     serializer_class = QuestionlSerializer
@@ -139,20 +165,22 @@ class QuestionDetail(generics.RetrieveUpdateDestroyAPIView):
         question = Question.objects.filter(id=kwargs['pk']).first()
         if question is None:
             return Response({"detail": "question is None"}, status=status.HTTP_404_NOT_FOUND)
-        if (request.data['type'] == 1 and len(request.data['text']) == 1):
-            question.text.all().delete()
+        if (request.data['type'] == 1 and len(request.data['chooses']) == 1):
+            question.chooses.all().delete()
             Question_choice(
-                words=request.data['text'][0], question_id=question).save()
-        elif (request.data['type'] == 2) and len(request.data['text']) > 1:
-            question.text.all().delete()
+                words=request.data['chooses'][0], question_id=question).save()
+        elif (request.data['type'] == 2) and len(request.data['chooses']) > 1:
+            question.chooses.all().delete()
             [Question_choice(words=word, question_id=question).save()
-             for word in request.data['text']]
-        elif (request.data['type'] == 3) and len(request.data['text']) == 1:
+             for word in request.data['chooses']]
+        elif (request.data['type'] == 3) and len(request.data['chooses']) == 1:
             question.text.all().delete()
             Question_choice(
-                words=request.data['text'][0], question_id=question).save()
+                words=request.data['chooses'][0], question_id=question).save()
         else:
             return Response({"error": "Error with type of question"}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        question.question = kwargs.get('question')
+        question.type = kwargs.get('type')
 
         return Response(QuestionlSerializer(question).data, status=status.HTTP_201_CREATED)
 
@@ -180,7 +208,6 @@ class UserReportsDetail(generics.ListAPIView):
 
     def list(self, request, **kwargs):
         user = generics.get_object_or_404(User, pk=kwargs.get('pk'))
-        print(user.reports.all())
         return Response(UserReportSerializer(user).data, status=status.HTTP_200_OK)
 
 

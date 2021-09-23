@@ -19,12 +19,14 @@ class Question(models.Model):
     poll_id = models.ForeignKey(
         'Poll', on_delete=models.CASCADE, null=False, default=None)
     type = models.IntegerField(choices=Question_choices, default=1)
+    question = models.CharField(max_length=200, null=True)
 
 
 class Question_choice(models.Model):
+    # words - выбор ответа
     words = models.CharField(max_length=120)
     question_id = models.ForeignKey(
-        'Question', related_name='text', on_delete=models.CASCADE, default=None)
+        'Question', related_name='chooses', on_delete=models.CASCADE, default=None)
 
 
 class Report(models.Model):
