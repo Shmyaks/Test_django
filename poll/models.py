@@ -36,7 +36,7 @@ class Report(models.Model):
 
 
 class Answer(models.Model):
-    ans = models.CharField(max_length=120, default=None)
+    ans = models.CharField(max_length=500, default=None)
     question = models.ForeignKey(
         'Question', related_name='answers', on_delete=models.CASCADE)
     report_id = models.ForeignKey(

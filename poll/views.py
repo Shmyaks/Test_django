@@ -7,7 +7,26 @@ from datetime import datetime
 import re
 from rest_framework import status
 from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 # Create your views here.
+
+
+class UserViewSet(generics.ListCreateAPIView):
+    """
+    - 'GET' Получение списка юзеров
+    - 'POST' Создание юзера
+
+    - Для создание опроса требуется:
+    -- {
+        "username": "string",
+        "password": "string"
+        }
+    """
+    queryset = User.objects.all()
+    serializer_class = CreateUserSerializer
+
+    def create(self, request, *args, **kwargs):
+        return super(UserViewSet, self).create(request, *args, **kwargs)
 
 
 class PollList(generics.ListCreateAPIView):
@@ -158,6 +177,11 @@ class UserReportsDetail(generics.ListAPIView):
 
     queryset = User.objects.all()
     serializer_class = UserReportSerializer
+
+    def list(self, request, **kwargs):
+        user = generics.get_object_or_404(User, pk=kwargs.get('pk'))
+        print(user.reports.all())
+        return Response(UserReportSerializer(user).data, status=status.HTTP_200_OK)
 
 
 class PollClose(generics.UpdateAPIView):

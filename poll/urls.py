@@ -11,6 +11,7 @@ urlpatterns = [
     path('questions/<int:pk>', QuestionDetail.as_view()),
     path('report/<int:pk>', ReportDetail.as_view()),
     path('report/start', ReportCreate.as_view()),
+    path('user', UserViewSet.as_view()),
     path('user/<int:pk>/report', UserReportsDetail.as_view()),
     path('answer/<int:pk>', AnswerSend.as_view()),
 ]
